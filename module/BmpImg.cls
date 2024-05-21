@@ -27,8 +27,6 @@ Public ImportantColors As Long
 Private ColorPalette() As Long
 Private PixelData() As Byte
 
-Private XXX() As Byte
-
 Public Sub OpenImg()
 '    If (VarType(arr) <> (vbArray + vbByte)) Then
 '        Err.Raise vbObjectError
@@ -52,16 +50,23 @@ Public Sub OpenImg()
         Exit Sub
     End If
 
-    Signature = byteArr(0) + byteArr(1) * (256 ^ 1)
-    FileSize = byteArr(2) + byteArr(3) * (256 ^ 1) + byteArr(4) * (256 ^ 2) + byteArr(5) * (256 ^ 3)
-    Reserved0 = byteArr(6) + byteArr(7) * (256 ^ 1) + byteArr(8) * (256 ^ 2) + byteArr(9) * (256 ^ 3)
-    DataOffset = byteArr(10) + byteArr(11) * (256 ^ 1) + byteArr(12) * (256 ^ 2) + byteArr(13) * (256 ^ 3)
+    Signature = ReadBytes(byteArr, 0, 2)
+    FileSize = ReadBytes(byteArr, 2, 4)
+    Reserved0 = ReadBytes(byteArr, 6, 4)
+    DataOffset = ReadBytes(byteArr, 10, 4)
     
-    InfoSize = byteArr(14) + byteArr(15) * (256 ^ 1) + byteArr(16) * (256 ^ 2) + byteArr(17) * (256 ^ 3)
+    InfoSize = ReadBytes(byteArr, 14, 4)
+    Width = ReadBytes(byteArr, 18, 4)
+    Height = ReadBytes(byteArr, 22, 4)
+    Planes = ReadBytes(byteArr, 26, 2)
+    BitsPerPixel = ReadBytes(byteArr, 28, 2)
+    Compression = ReadBytes(byteArr, 30, 4)
+    ImageSize = ReadBytes(byteArr, 34, 4)
+    XpixelsPerM = ReadBytes(byteArr, 38, 4)
+    YpixelsPerM = ReadBytes(byteArr, 42, 4)
+    ColorsUsed = ReadBytes(byteArr, 46, 4)
+    ImportantColors = ReadBytes(byteArr, 50, 4)
     
-    Width = byteArr(18) + byteArr(19) * (256 ^ 1) + byteArr(20) * (256 ^ 2) + byteArr(21) * (256 ^ 3)
-    Height = byteArr(22) + byteArr(23) * (256 ^ 1) + byteArr(24) * (256 ^ 2) + byteArr(25) * (256 ^ 3)
-    BitsPerPixel = byteArr(28) + byteArr(29) * (256 ^ 1)
     If Width * Height > 877012 Then
         r = MsgBox("File too large!", vbCritical)
         Exit Sub
@@ -78,8 +83,6 @@ Public Sub OpenImg()
     For i = DataOffset To FileSize - 1
         PixelData(i - DataOffset) = byteArr(i)
     Next
-    
-    XXX = byteArr
 End Sub
 Public Sub Show()
     Dim ro As Long
@@ -203,10 +206,27 @@ Public Sub SaveImg()
     If (Width * BitsPerPixel) Mod 32 Then
         padding = Int((32 - ((Width * BitsPerPixel) Mod 32)) / 8)
     End If
+
+    ReDim byteArr(0 To FileSize - 1)
+    WriteBytes byteArr, 0, 2, Signature
+    WriteBytes byteArr, 2, 4, FileSize
+    WriteBytes byteArr, 6, 4, Reserved0
+    WriteBytes byteArr, 10, 4, DataOffset
     
-    byteArr = XXX
+    WriteBytes byteArr, 14, 4, InfoSize
+    WriteBytes byteArr, 18, 4, Width
+    WriteBytes byteArr, 22, 4, Height
+    WriteBytes byteArr, 26, 2, Planes
+    WriteBytes byteArr, 28, 2, BitsPerPixel
+    WriteBytes byteArr, 30, 4, Compression
+    WriteBytes byteArr, 34, 4, ImageSize
+    WriteBytes byteArr, 38, 4, XpixelsPerM
+    WriteBytes byteArr, 42, 4, YpixelsPerM
+    WriteBytes byteArr, 46, 4, ColorsUsed
+    WriteBytes byteArr, 50, 4, ImportantColors
+
     d = DataOffset
-    
+
     If BitsPerPixel = 16 Then
         
     ElseIf BitsPerPixel = 24 Then
@@ -261,7 +281,7 @@ Public Sub Brightness(Br As Integer)
             If b > 255 Then
                 b = 255
             End If
-                
+
             Cells(h, w).Interior.Color = RGB(r, g, b)
         Next
     Next
